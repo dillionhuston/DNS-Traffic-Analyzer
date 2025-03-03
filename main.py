@@ -1,33 +1,51 @@
 from scapy.all import sniff, DNS, DNSQR, packet
-#import csv libary 
 import pandas as pd
 import numpy as np 
 import json
 import pickle
 import csv
+from openpyxl import Workbook as op
+from handler import *
+
+
+dns_traffic_data = r"C:\Users\dillionn\Downloads\data.xlsx"
+dns_queries = []
+
 
 def process_pack(packet):
     if packet.haslayer(DNS) and packet.haslayer(DNSQR):
 
-        dns_query = {}
+        query = True
+        dns_queries.append({
+            'timestamp': packet.time,            
+            'dst_ip': packet[1].dst,             
+            'query_name': packet[DNSQR].qname.decode(),  
+            'query_type': packet[DNSQR].qtype   
+        })
+        sniff(filter="udp and port 53",prn=process_pack, count=60)
+
+
+def save_data(dns_queries, dns_query, query):
         
+        df = pd.DataFrame(dns_queries)
+        with pd.ExcelWriter(dns_traffic_data, mode='a', engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, header=not writer.sheets)
+
+
+            print("data saved")
+
+
+
+def test(dns_qureies):
+     print(dns_queries[0])
+
+#sniff(filter="udp and port 53", prn=process_pack, count=60)
+#save_data()
+
+test()
+
+        
+
     
-        dns_query["timestamp"] = packet.time
-        dns_query["src_ip"] = packet[1].src
-        dns_query["dst_ip"] = packet[1].dst
-        dns_query["query_name"] = packet[DNSQR].qname.decode()
-        dns_query["query_type"] = packet[DNSQR].qtype
-        
-        dns_queries.append(dns_query)
-
-dns_queries = []
-sniff(filter="udp and port 53",prn=process_pack, count=60)  
-   
-def save_to_json():
-     with open('data.json', 'w') as json_file:
-        json.dump(dns_queries, json_file, indent=4) 
-save_to_json()
-
-
 
 
