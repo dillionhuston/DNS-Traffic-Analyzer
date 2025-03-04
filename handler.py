@@ -1,22 +1,24 @@
-import openpyxl  
-def handle_file():
-  
-    data = r'C:\Users\dillion.\Downloads\data.xlsx'
+import openpyxl
+import pandas as pd
+import os
+from openpyxl import Workbook 
+from openpyxl import load_workbook
+
+
+
+dns_traffic_data = "data.xlsx"
+
+class HandleData:
     
-   
-    file = openpyxl.load_workbook(data)
-    ws = file.active  
-
-    
-    for row in ws.iter_rows(min_row=2, values_only=True): 
-        timestamp, src_ip, dst_ip, query_name, query_type = row
-
-        print(f"Timestamp: {timestamp}")
-        print(f"Source IP: {src_ip}")
-        print(f"Destination IP: {dst_ip}")
-        print(f"Query Name: {query_name}")
-        print(f"Query Type: {query_type}")
-       
-handle_file()
-
+    def read_data(dns_traffic_data):
+        try:
+            wb = openpyxl.load_workbook(dns_traffic_data)
+            traffic_obj = wb.active  
+            print(traffic_obj) 
+            for row in traffic_obj.iter_rows(min_row=1, max_row=6, values_only=True):
+                print(row)
+        except Exception as e:
+            print(f"Error reading {dns_traffic_data}: {e}")
+            return 
+        
 
