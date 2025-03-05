@@ -3,18 +3,16 @@ import plotly.graph_objects as go
 import pandas as pd
 import time
 
-# Path to your Excel file
+
 dns_traffic_data = "data.xlsx"
 
-# Title of the app
 st.title("DNS TRAFFIC STATS")
 
-# Placeholder for the plotly graphs
 domain_graph_placeholder = st.empty()
 ip_graph_placeholder = st.empty()
 query_type_graph_placeholder = st.empty()
 
-# Function to get data and update the graph
+
 def get_data():
     try:
         df = pd.read_excel(dns_traffic_data)  
