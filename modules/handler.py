@@ -1,67 +1,61 @@
+import streamlit as st
+import plotly.graph_objects as go
 import pandas as pd
-import matplotlib.pyplot as plt
+import time
 
+# Path to your Excel file
 dns_traffic_data = "data.xlsx"
 
-def TrafficCounts():
-   
-    df = pd.read_excel(dns_traffic_data)
-    
-    print("Data from Excel:")
-    print(df.head())
-    expected_columns = ["timestamp", "source_ip", "dst_ip", "query_name", "query_type"]
+# Title of the app
+st.title("DNS TRAFFIC STATS")
+
+# Placeholder for the plotly graphs
+domain_graph_placeholder = st.empty()
+ip_graph_placeholder = st.empty()
+query_type_graph_placeholder = st.empty()
+
+# Function to get data and update the graph
+def get_data():
+    try:
+        df = pd.read_excel(dns_traffic_data)  
+        domain_counts = df['query_name'].value_counts().nlargest(10)
+        ip_counts = df['source_ip'].value_counts().nlargest(10)
+        dns_query_types = df['query_type'].value_counts().nlargest(10)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+        # domain bar
+        domain_fig = go.Figure(data=[go.Bar(x=domain_counts.index, y=domain_counts.values)])
+        domain_fig.update_layout(title="Top 10 Queried Domains", xaxis_title="Domain", yaxis_title="Count")
+        
+        # ip bar
+        ip_fig = go.Figure(data=[go.Bar(x=ip_counts.index, y=ip_counts.values)])
+        ip_fig.update_layout(title="Top 10 Source IPs", xaxis_title="IP", yaxis_title="Count")
+
+     
+        traffic_counts = df.groupby(pd.Grouper(key='timestamp', freq='10S')).size()
+
+       
+        traffic_spikes = traffic_counts[traffic_counts > traffic_counts.quantile(0.95)]  
+        spikes = go.Figure()
+
+        spikes.add_trace(go.Scatter(x=traffic_counts.index, y=traffic_counts.values, mode='lines', name="Traffic"))
+
+      
+        spikes.add_trace(go.Scatter(x=traffic_spikes.index, y=traffic_spikes.values, mode='markers', name="Spikes", marker=dict(color='red', size=10)))
+        spikes.update_layout(title="DNS Traffic with Spikes", xaxis_title="Timestamp", yaxis_title="Traffic Count", showlegend=True)
+
+        return domain_fig, ip_fig, spikes
+
+    except Exception as e:
+        st.error(f"Error reading the data: {e}")
+        return go.Figure(), go.Figure(), go.Figure()
 
 
-    if not all(col in df.columns for col in expected_columns):
-        print("Error reading: Missing expected columns") 
-        return None, None, None
+while True:
+    domain_fig, ip_fig, spikes = get_data()
 
-   
-    domain_counts = df["query_type"].value_counts().nlargest(10)
-    ip_counts = df["source_ip"].value_counts().nlargest(10)
-    query_type_counts = df["query_name"].value_counts().nlargest(10)
-    
-    print("Domain counts:")
-    print(domain_counts)
-    print("IP counts:")
-    print(ip_counts)
-    print("Query type counts:")
-    print(query_type_counts)
-    
-    print("Excel file read successfully")
-    
-    return domain_counts, ip_counts, query_type_counts
+    domain_graph_placeholder.plotly_chart(domain_fig, use_container_width=True)
+    ip_graph_placeholder.plotly_chart(ip_fig, use_container_width=True)
+    query_type_graph_placeholder.plotly_chart(spikes, use_container_width=True)
 
-def plotgraph(domain_counts, ip_counts, query_type_counts):
-    if domain_counts is None or ip_counts is None or query_type_counts is None:
-        print("No data to plot")
-        return
-    
-    if not domain_counts.empty:
-        plt.figure(figsize=(10, 5))
-        domain_counts.plot(kind="bar", title="Top Ten Domain Names")
-        plt.xticks(rotation=180)
-        plt.xlabel("Domains")
-        plt.ylabel("Query Count")
-        plt.show()
-
-    if not ip_counts.empty:
-        plt.figure(figsize=(10, 5))
-        ip_counts.plot(kind="bar", title="Top Ten IP Sources")
-        plt.xticks(rotation=45)
-        plt.xlabel("Source IPs")
-        plt.ylabel("Query Count")
-        plt.show()
-
-   
-    if not query_type_counts.empty:
-        plt.figure(figsize=(10, 5))
-        query_type_counts.plot(kind="bar", title="Top Ten Query Types")
-        plt.xlabel("Query Type")
-        plt.ylabel("Count")
-        plt.show()
-
-domain_counts, ip_counts, query_type_counts = TrafficCounts()
-
-if domain_counts is not None and ip_counts is not None and query_type_counts is not None:
-    plotgraph(domain_counts, ip_counts, query_type_counts)
+    time.sleep(10)  
