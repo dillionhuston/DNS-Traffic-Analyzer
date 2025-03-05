@@ -8,9 +8,9 @@ from openpyxl import load_workbook
 
 dns_traffic_data = "data.xlsx"
 
-class HandleData:
+class HandleTrafficData:
     
-    def read_data(dns_traffic_data):
+    def Read_Traffc_Data(dns_traffic_data):
         try:
             wb = openpyxl.load_workbook(dns_traffic_data)
             traffic_obj = wb.active  
