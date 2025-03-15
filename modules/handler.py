@@ -3,57 +3,41 @@ import plotly.graph_objects as go
 import pandas as pd
 import time
 
-
 dns_traffic_data = "data.xlsx"
 
 st.title("DNS TRAFFIC STATS")
 
-domain_graph_placeholder = st.empty()
-ip_graph_placeholder = st.empty()
-query_type_graph_placeholder = st.empty()
-
+domain_chart = st.empty()
+ip_chart = st.empty()
+traffic_chart = st.empty()
 
 def get_data():
     try:
-        df = pd.read_excel(dns_traffic_data)  
-        domain_counts = df['query_name'].value_counts().nlargest(10)
-        ip_counts = df['source_ip'].value_counts().nlargest(10)
-        dns_query_types = df['query_type'].value_counts().nlargest(10)
+        df = pd.read_excel(dns_traffic_data)
         df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-        # domain bar
-        domain_fig = go.Figure(data=[go.Bar(x=domain_counts.index, y=domain_counts.values)])
-        domain_fig.update_layout(title="Top 10 Queried Domains", xaxis_title="Domain", yaxis_title="Count")
-        
-        # ip bar
-        ip_fig = go.Figure(data=[go.Bar(x=ip_counts.index, y=ip_counts.values)])
-        ip_fig.update_layout(title="Top 10 Source IPs", xaxis_title="IP", yaxis_title="Count")
-
-     
-        traffic_counts = df.groupby(pd.Grouper(key='timestamp', freq='10S')).size()
-
-       
-        traffic_spikes = traffic_counts[traffic_counts > traffic_counts.quantile(0.95)]  
-        spikes = go.Figure()
-
-        spikes.add_trace(go.Scatter(x=traffic_counts.index, y=traffic_counts.values, mode='lines', name="Traffic"))
-
-      
-        spikes.add_trace(go.Scatter(x=traffic_spikes.index, y=traffic_spikes.values, mode='markers', name="Spikes", marker=dict(color='red', size=10)))
-        spikes.update_layout(title="DNS Traffic with Spikes", xaxis_title="Timestamp", yaxis_title="Traffic Count", showlegend=True)
-
-        return domain_fig, ip_fig, spikes
-
+        return df
     except Exception as e:
         st.error(f"Error reading the data: {e}")
-        return go.Figure(), go.Figure(), go.Figure()
+        return pd.DataFrame()
 
+def update_charts(df):
+    domain_counts = df['query_name'].value_counts().nlargest(10)
+    domain_fig = go.Figure(data=[go.Bar(x=domain_counts.index, y=domain_counts.values)])
+    domain_fig.update_layout(title="Top 10 Queried Domains", xaxis_title="Domain", yaxis_title="Count")
+    domain_chart.plotly_chart(domain_fig, use_container_width=True, key="domain_chart")
+
+    ip_counts = df['source_ip'].value_counts().nlargest(10)
+    ip_fig = go.Figure(data=[go.Bar(x=ip_counts.index, y=ip_counts.values)])
+    ip_fig.update_layout(title="Top 10 Source IPs", xaxis_title="IP", yaxis_title="Count")
+    ip_chart.plotly_chart(ip_fig, use_container_width=True, key="ip_chart")
+
+    traffic_counts = df.groupby(pd.Grouper(key='timestamp', freq='10S')).size()
+    traffic_fig = go.Figure(data=[go.Scatter(x=traffic_counts.index, y=traffic_counts.values, mode='lines+markers')])
+    traffic_fig.update_layout(title="DNS Traffic Over Time", xaxis_title="Timestamp", yaxis_title="Query Count")
+    traffic_chart.plotly_chart(traffic_fig, use_container_width=True, key="traffic_chart")
 
 while True:
-    domain_fig, ip_fig, spikes = get_data()
-
-    domain_graph_placeholder.plotly_chart(domain_fig, use_container_width=True)
-    ip_graph_placeholder.plotly_chart(ip_fig, use_container_width=True)
-    query_type_graph_placeholder.plotly_chart(spikes, use_container_width=True)
-
-    time.sleep(10)  
+    df = get_data()
+    if not df.empty:
+        update_charts(df)
+    time.sleep(10)
