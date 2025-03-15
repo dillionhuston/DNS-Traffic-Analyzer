@@ -69,15 +69,15 @@ if __name__ == "__main__":
         print("data saved to", dns_traffic_data)
         # start sniffing in a separate thread
         sniff_thread = threading.Thread(target=sniff_continuously)
-        sniff_thread.daemon = True#+
-        sniff_thread.start()#+
+        sniff_thread.daemon = True
+        sniff_thread.start()
 
         print("DNS monitoring started. Press Ctrl+C to stop.")
 
         while True:
-            time.sleep(10)  # wait for 10 seconds#+
-            if dns_queries:#+
-                update_counts(dns_queries)#+
+            time.sleep(10)  # wait for 10 seconds
+            if dns_queries:
+                update_counts(dns_queries)
                 save_data(dns_queries)#+
                 dns_queries.clear()
             update_graph()
